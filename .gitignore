@@ -1,0 +1,17 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Python cache and build files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Windows Zone Identifier files (ADS artifacts)
+*Zone.Identifier
+
+# IDE specific files
+.vscode/
+.idea/
