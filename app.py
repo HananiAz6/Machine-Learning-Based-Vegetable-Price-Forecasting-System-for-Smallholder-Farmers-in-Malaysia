@@ -7,6 +7,8 @@ import io
 import holidays
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo  # Built-in timezone support
 
 st.set_page_config(page_title="Sistem Ramalan Harga Sayuran Pertanian Malaysia",
                     page_icon="🌾", layout="wide")
@@ -654,7 +656,7 @@ st.markdown(f"""
   
   <div style="margin-top: 20px;">
     <div class="live-badge">
-      Tarikh kemas kini data<br><b>{datetime.now().strftime('%d %b %Y, %I:%M %p')}</b>
+      Tarikh kemas kini data<br><b>{datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime('%d %b %Y, %I:%M %p')}</b>
     </div>
   </div>
 </div>
