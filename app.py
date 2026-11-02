@@ -7,12 +7,6 @@ import io
 import holidays
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo  # Built-in timezone support
-
-# Helper function to get current Malaysian date
-def get_myt_today():
-  return datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).date()
 
 st.set_page_config(page_title="Sistem Ramalan Harga Sayuran Pertanian Malaysia",
                     page_icon="🌾", layout="wide")
@@ -202,7 +196,7 @@ def get_weather_forecast(state, horizon_days):
             df = pd.concat([df, extra], ignore_index=True)
         return df.head(horizon_days), True
     except Exception:
-        dates = pd.date_range(get_myt_today(), periods=horizon_days)
+        dates = pd.date_range(datetime.today(), periods=horizon_days)
         df = pd.DataFrame({
             "date": dates, "Rainfall_mm": 5.0,
             "Max_Temp": 32.0, "Min_Temp": 24.0, "Humidity_Pct": 80.0,
@@ -297,7 +291,7 @@ def get_pricecatcher_live(state, crop, after_date):
         if not item_codes or not premise_codes:
             return pd.DataFrame(columns=["date", "price"]), False
 
-        today = get_myt_today()
+        today = datetime.today()
         months = sorted({(today.replace(day=1) - pd.DateOffset(months=k)).strftime("%Y-%m") for k in range(2)})
         frames = []
         for m in months:
@@ -415,7 +409,7 @@ def get_actual_price_history(state, crop, n_days=21):
         noise = rng.normal(0, base * 0.03, n_days)
         trend = np.linspace(base * 1.05, base, n_days)
         prices = trend + noise
-        dates = pd.date_range(end=get_myt_today(), periods=n_days)
+        dates = pd.date_range(end=datetime.today(), periods=n_days)
         hist = pd.DataFrame({"date": dates, "price": prices})
         seed_features = {
             "lag_1": prices[-1], "lag_3": prices[-3], "lag_7": prices[-7],
@@ -579,48 +573,32 @@ def run_forecast(state, crop, horizon_days):
     hist, seed_features, hist_live, pricecatcher_connected, live_days_added = get_actual_price_history(state, crop, 21)
     prices = list(hist["price"].values)
     last_real_date = pd.Timestamp(hist["date"].max())
-    today = pd.Timestamp(get_myt_today())
+    today = pd.Timestamp(datetime.today().date())
 
     diesel_price, diesel_change, diesel_live = get_diesel_price()
 
-   # ---- 1) BRIDGE (nowcast for days already passed but not in the CSV) ----
+    # ---- 1) BRIDGE (nowcast for days already passed but not in the CSV) ----
     bridge_df = pd.DataFrame(columns=["date", "forecast_price"])
     bridge_weather_live = True
-
-    # Only attempt bridge calculation if there is a gap of more than 1 day
-    if last_real_date < (today - timedelta(days=1)):
-      bridge_dates = pd.date_range(
-          last_real_date + timedelta(days=1), today - timedelta(days=1)
-      )
-      if len(bridge_dates) > 0:
+    if last_real_date < today:
+        bridge_dates = pd.date_range(last_real_date + timedelta(days=1), today)
         bw_df, bridge_weather_live = get_weather_historical(
-            state,
-            bridge_dates[0].strftime("%Y-%m-%d"),
-            bridge_dates[-1].strftime("%Y-%m-%d"),
-        )
+            state, bridge_dates[0].strftime("%Y-%m-%d"), bridge_dates[-1].strftime("%Y-%m-%d"))
         bw_df = bw_df.set_index("date").reindex(bridge_dates)
-        bw_df = bw_df.ffill().bfill()
+        bw_df = bw_df.ffill().bfill()  # archive API can lag by a day or two for very recent dates
         bw_df = bw_df.reset_index().rename(columns={"index": "date"})
 
         bridge_rows = []
         for i, date in enumerate(bridge_dates):
-          pred = _predict_step(
-              date,
-              state,
-              crop,
-              bw_df.iloc[i],
-              diesel_change,
-              prices,
-              seed_features if i == 0 else None,
-              i,
-          )
-          prices.append(pred)
-          bridge_rows.append({"date": date, "forecast_price": pred})
+            pred = _predict_step(date, state, crop, bw_df.iloc[i], diesel_change,
+                                  prices, seed_features if i == 0 else None, i)
+            prices.append(pred)
+            bridge_rows.append({"date": date, "forecast_price": pred})
         bridge_df = pd.DataFrame(bridge_rows)
 
     # ---- 2) FUTURE forecast from today onward ----
     weather_df, weather_live = get_weather_forecast(state, horizon_days + 1)
-    weather_df = weather_df[weather_df["date"] >= today].reset_index(drop=True)
+    weather_df = weather_df[weather_df["date"] > today].reset_index(drop=True)
     if len(weather_df) < horizon_days:
         start_extra = weather_df["date"].iloc[-1] + timedelta(days=1) if len(weather_df) else today + timedelta(days=1)
         extra_dates = pd.date_range(start_extra, periods=horizon_days - len(weather_df))
@@ -676,7 +654,7 @@ st.markdown(f"""
   
   <div style="margin-top: 20px;">
     <div class="live-badge">
-      Tarikh kemas kini data<br><b>{datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime('%d %b %Y, %I:%M %p')}</b>
+      Tarikh kemas kini data<br><b>{datetime.now().strftime('%d %b %Y, %I:%M %p')}</b>
     </div>
   </div>
 </div>
@@ -754,7 +732,7 @@ if generate:
 st.markdown('<div class="section-card">', unsafe_allow_html=True)
 st.markdown(f"#### Trajektori Harga Ladang Semasa & Ramalan AI")
 last_real_date = hist["date"].max()
-today_ts = pd.Timestamp(get_myt_today())
+today_ts = pd.Timestamp(datetime.today().date())
 gap_days = max((today_ts - pd.Timestamp(last_real_date)).days, 0)
 
 # ============================================================
