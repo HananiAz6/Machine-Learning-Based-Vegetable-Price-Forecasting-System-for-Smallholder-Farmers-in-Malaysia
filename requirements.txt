@@ -8,5 +8,5 @@ plotly
 matplotlib
 seaborn
 requests
-python-holidays
+holidays
 pyarrow
