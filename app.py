@@ -583,23 +583,39 @@ def run_forecast(state, crop, horizon_days):
 
     diesel_price, diesel_change, diesel_live = get_diesel_price()
 
-    # ---- 1) BRIDGE (nowcast for days already passed but not in the CSV) ----
+   # ---- 1) BRIDGE (nowcast for days already passed but not in the CSV) ----
     bridge_df = pd.DataFrame(columns=["date", "forecast_price"])
     bridge_weather_live = True
-    if last_real_date < today:
-        bridge_dates = pd.date_range(last_real_date + timedelta(days=1), today - timedelta(days=1))
+
+    # Only attempt bridge calculation if there is a gap of more than 1 day
+    if last_real_date < (today - timedelta(days=1)):
+      bridge_dates = pd.date_range(
+          last_real_date + timedelta(days=1), today - timedelta(days=1)
+      )
+      if len(bridge_dates) > 0:
         bw_df, bridge_weather_live = get_weather_historical(
-            state, bridge_dates[0].strftime("%Y-%m-%d"), bridge_dates[-1].strftime("%Y-%m-%d"))
+            state,
+            bridge_dates[0].strftime("%Y-%m-%d"),
+            bridge_dates[-1].strftime("%Y-%m-%d"),
+        )
         bw_df = bw_df.set_index("date").reindex(bridge_dates)
-        bw_df = bw_df.ffill().bfill()  # archive API can lag by a day or two for very recent dates
+        bw_df = bw_df.ffill().bfill()
         bw_df = bw_df.reset_index().rename(columns={"index": "date"})
 
         bridge_rows = []
         for i, date in enumerate(bridge_dates):
-            pred = _predict_step(date, state, crop, bw_df.iloc[i], diesel_change,
-                                  prices, seed_features if i == 0 else None, i)
-            prices.append(pred)
-            bridge_rows.append({"date": date, "forecast_price": pred})
+          pred = _predict_step(
+              date,
+              state,
+              crop,
+              bw_df.iloc[i],
+              diesel_change,
+              prices,
+              seed_features if i == 0 else None,
+              i,
+          )
+          prices.append(pred)
+          bridge_rows.append({"date": date, "forecast_price": pred})
         bridge_df = pd.DataFrame(bridge_rows)
 
     # ---- 2) FUTURE forecast from today onward ----
