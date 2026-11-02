@@ -4,9 +4,9 @@ numpy
 xgboost
 scikit-learn
 statsmodels
-tensorflow
 plotly
 matplotlib
 seaborn
 requests
 python-holidays
+pyarrow
