@@ -587,7 +587,7 @@ def run_forecast(state, crop, horizon_days):
     bridge_df = pd.DataFrame(columns=["date", "forecast_price"])
     bridge_weather_live = True
     if last_real_date < today:
-        bridge_dates = pd.date_range(last_real_date + timedelta(days=1), today)
+        bridge_dates = pd.date_range(last_real_date + timedelta(days=1), today - timedelta(days=1))
         bw_df, bridge_weather_live = get_weather_historical(
             state, bridge_dates[0].strftime("%Y-%m-%d"), bridge_dates[-1].strftime("%Y-%m-%d"))
         bw_df = bw_df.set_index("date").reindex(bridge_dates)
@@ -604,7 +604,7 @@ def run_forecast(state, crop, horizon_days):
 
     # ---- 2) FUTURE forecast from today onward ----
     weather_df, weather_live = get_weather_forecast(state, horizon_days + 1)
-    weather_df = weather_df[weather_df["date"] > today].reset_index(drop=True)
+    weather_df = weather_df[weather_df["date"] >= today].reset_index(drop=True)
     if len(weather_df) < horizon_days:
         start_extra = weather_df["date"].iloc[-1] + timedelta(days=1) if len(weather_df) else today + timedelta(days=1)
         extra_dates = pd.date_range(start_extra, periods=horizon_days - len(weather_df))
