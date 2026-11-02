@@ -785,12 +785,12 @@ forecast_y = [anchor_price] + list(forecast_df["forecast_price"])
 ci_upper = [anchor_price] + list(forecast_df["upper_ci"])
 ci_lower = [anchor_price] + list(forecast_df["lower_ci"])
 fig.add_trace(go.Scatter(x=forecast_x, y=ci_upper, mode="lines", line=dict(width=0), showlegend=False,
-                          hovertemplate="Tarikh: %{x|%d %b %Y}<br>Anggaran Atas (CI 95%): RM%{y:.2f}/kg<extra></extra>"))
+                          hovertemplate="Tarikh: %{x|%d %b %Y}<br>Anggaran Maksimum: RM%{y:.2f}/kg<extra></extra>"))
 fig.add_trace(go.Scatter(x=forecast_x, y=ci_lower, mode="lines", line=dict(width=0), fill="tonexty",
-                          fillcolor="rgba(52,211,153,0.25)", name="Zon Keyakinan 95% (CI)",
-                          hovertemplate="Tarikh: %{x|%d %b %Y}<br>Anggaran Bawah (CI 95%): RM%{y:.2f}/kg<extra></extra>"))
+                          fillcolor="rgba(52,211,153,0.25)", name="Zon Ramalan - Julat Maksimum dan Minimum",
+                          hovertemplate="Tarikh: %{x|%d %b %Y}<br>Anggaran Minimum: RM%{y:.2f}/kg<extra></extra>"))
 fig.add_trace(go.Scatter(x=forecast_x, y=forecast_y, mode="lines+markers",
-                          name="Ramalan AI (Penurunan Unjuran)",
+                          name="Ramalan AI ",
                           line=dict(color="#dc2626", width=3, dash="dot"),
                           hovertemplate="Tarikh: %{x|%d %b %Y}<br>Harga Ramalan: RM%{y:.2f}/kg<extra></extra>"))
 fig.add_vline(x=today_ts, line_dash="dash", line_color="#b91c1c",
@@ -858,7 +858,7 @@ st.markdown(f"""
 
 st.markdown("""
 <div style="background-color: #f8f9fa; padding: 10px 15px; border-radius: 5px; border: 1px solid #e9ecef; font-size: 14px; color: #31333F;">
-    🛈  Harga sebenar berkemungkinan berada dalam julat minimun dan maksimum yang dipaparkan. Julat ini menunjukkan kemungkinan perubahan harga berdasarkan corak data sebelum ini.
+    🛈  Harga sebenar berkemungkinan berada dalam julat minimum dan maksimum yang dipaparkan. Julat ini menunjukkan kemungkinan perubahan harga berdasarkan corak data sebelum ini.
 </div>
 """, unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
