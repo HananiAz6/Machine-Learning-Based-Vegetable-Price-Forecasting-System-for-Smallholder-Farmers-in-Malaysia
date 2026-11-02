@@ -10,6 +10,10 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo  # Built-in timezone support
 
+# Helper function to get current Malaysian date
+def get_myt_today():
+  return datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).date()
+
 st.set_page_config(page_title="Sistem Ramalan Harga Sayuran Pertanian Malaysia",
                     page_icon="🌾", layout="wide")
 
@@ -198,7 +202,7 @@ def get_weather_forecast(state, horizon_days):
             df = pd.concat([df, extra], ignore_index=True)
         return df.head(horizon_days), True
     except Exception:
-        dates = pd.date_range(datetime.today(), periods=horizon_days)
+        dates = pd.date_range(get_myt_today(), periods=horizon_days)
         df = pd.DataFrame({
             "date": dates, "Rainfall_mm": 5.0,
             "Max_Temp": 32.0, "Min_Temp": 24.0, "Humidity_Pct": 80.0,
@@ -293,7 +297,7 @@ def get_pricecatcher_live(state, crop, after_date):
         if not item_codes or not premise_codes:
             return pd.DataFrame(columns=["date", "price"]), False
 
-        today = datetime.today()
+        today = get_myt_today()
         months = sorted({(today.replace(day=1) - pd.DateOffset(months=k)).strftime("%Y-%m") for k in range(2)})
         frames = []
         for m in months:
@@ -411,7 +415,7 @@ def get_actual_price_history(state, crop, n_days=21):
         noise = rng.normal(0, base * 0.03, n_days)
         trend = np.linspace(base * 1.05, base, n_days)
         prices = trend + noise
-        dates = pd.date_range(end=datetime.today(), periods=n_days)
+        dates = pd.date_range(end=get_myt_today(), periods=n_days)
         hist = pd.DataFrame({"date": dates, "price": prices})
         seed_features = {
             "lag_1": prices[-1], "lag_3": prices[-3], "lag_7": prices[-7],
@@ -575,7 +579,7 @@ def run_forecast(state, crop, horizon_days):
     hist, seed_features, hist_live, pricecatcher_connected, live_days_added = get_actual_price_history(state, crop, 21)
     prices = list(hist["price"].values)
     last_real_date = pd.Timestamp(hist["date"].max())
-    today = pd.Timestamp(datetime.today().date())
+    today = pd.Timestamp(get_myt_today())
 
     diesel_price, diesel_change, diesel_live = get_diesel_price()
 
@@ -734,7 +738,7 @@ if generate:
 st.markdown('<div class="section-card">', unsafe_allow_html=True)
 st.markdown(f"#### Trajektori Harga Ladang Semasa & Ramalan AI")
 last_real_date = hist["date"].max()
-today_ts = pd.Timestamp(datetime.today().date())
+today_ts = pd.Timestamp(get_myt_today())
 gap_days = max((today_ts - pd.Timestamp(last_real_date)).days, 0)
 
 # ============================================================
